@@ -1,0 +1,8 @@
+{
+  "name": "Knowflow Agent",
+  "description": "企业知识库智能助手 - 基于 RAG 技术的企业级 AI 问答平台",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
