@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
@@ -7,29 +7,50 @@
   --font-serif: "Playfair Display", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-brand-50: #f0f7ff;
-  --color-brand-100: #e0effe;
-  --color-brand-200: #bae0fd;
-  --color-brand-500: #0ea5e9;
-  --color-brand-600: #0284c7;
-  --color-brand-700: #0369a1;
+  --color-gold-50: #fffdf5;
+  --color-gold-100: #fff9e6;
+  --color-gold-500: #c5a021;
+  --color-gold-600: #a6841c;
+  --color-gold-700: #856916;
+  
+  --color-noble-bg: #fcfaf7;
+  --color-noble-dark: #1a1614;
 }
 
 @layer base {
   body {
-    @apply font-sans text-slate-900 antialiased bg-[#fcfcfb];
+    @apply font-sans bg-noble-bg text-stone-900 antialiased font-semibold;
   }
   
   h1, h2, h3, h4 {
-    @apply font-serif tracking-tight;
+    @apply font-serif tracking-tight text-noble-dark italic font-black;
   }
 }
 
-.glass {
-  @apply bg-white/70 backdrop-blur-md border border-white/20;
+.baroque-card {
+  @apply bg-white border border-[#e8dec5] rounded-sm p-8 shadow-[0_10px_40px_-10px_rgba(40,30,20,0.1)] hover:shadow-[0_20px_50px_-10px_rgba(197,160,33,0.15)] transition-all duration-700 relative overflow-hidden;
+  background-image: radial-gradient(circle at top right, rgba(197, 160, 33, 0.03) 0%, transparent 70%);
 }
 
-.bento-card {
-  @apply bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)] transition-all duration-500;
+.baroque-card:before {
+  content: "";
+  @apply absolute inset-0 border-[4px] border-double border-[#d4af37]/20 pointer-events-none m-1.5;
+}
+
+.gilded-btn {
+  @apply px-8 py-3 bg-[#1a1614] text-[#c5a021] font-serif italic font-bold rounded-sm shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-[#2a2624] hover:shadow-[0_4px_25px_rgba(197,160,33,0.3)] transition-all active:scale-95 border border-[#c5a021]/30;
+}
+
+.marble-bg {
+  background: linear-gradient(135deg, #fcfaf7 0%, #f2ede4 100%);
+  position: relative;
+}
+
+.shadow-chiaroscuro {
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25), 0 18px 36px -18px rgba(0, 0, 0, 0.3);
+}
+
+.markdown-body {
+  @apply prose prose-stone max-w-none prose-headings:font-serif italic;
 }
 

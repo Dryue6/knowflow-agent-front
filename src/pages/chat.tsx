@@ -119,76 +119,86 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-10rem)] flex gap-8 overflow-hidden relative">
-      {/* Sidebar - Sessions List */}
-      <div className="hidden lg:flex flex-col w-80 bg-white/50 backdrop-blur-xl rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-2xl shadow-slate-200/50">
-        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-          <span className="font-serif font-bold text-xl text-slate-900">会话档案</span>
+    <div className="h-[calc(100vh-10rem)] flex gap-10 overflow-hidden relative">
+      {/* Sidebar - Sessions List (Wood/Dark Pane) */}
+      <div className="hidden lg:flex flex-col w-84 bg-noble-dark border border-gold-500/20 shadow-chiaroscuro overflow-hidden relative">
+        <div className="absolute inset-0 bg-gold-500/5 opacity-10 pointer-events-none" />
+        <div className="p-10 border-b border-gold-500/10 flex items-center justify-between relative z-10">
+          <span className="font-serif font-black italic text-2xl text-gold-500 tracking-tighter">会话秘档</span>
           <button 
             onClick={createSession} 
-            className="p-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 active:scale-90"
+            className="p-2.5 bg-gold-500 text-noble-dark rounded-sm hover:bg-gold-600 transition-all shadow-[0_0_15px_rgba(197,160,33,0.3)] active:scale-90"
           >
             <Plus className="w-5 h-5" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar relative z-10">
           {sessions.map(s => (
             <button
               key={s.id}
               onClick={() => setActiveSession(s.id)}
               className={cn(
-                "w-full flex items-center gap-4 px-5 py-4 rounded-3xl text-left transition-all group relative",
+                "w-full flex items-center gap-4 px-6 py-5 rounded-sm text-left transition-all group relative border border-transparent",
                 activeSession === s.id 
-                  ? "bg-white text-brand-600 shadow-[0_10px_20px_-5px_rgba(0,0,0,0.05)] border border-slate-100" 
-                  : "text-slate-500 hover:bg-white hover:text-slate-900 border border-transparent"
+                  ? "bg-gold-500/10 text-white shadow-inner border-gold-500/30" 
+                  : "text-stone-500 font-bold hover:bg-gold-500/5 hover:text-stone-300"
               )}
             >
               <div className={cn(
-                "p-2 rounded-xl transition-colors",
-                activeSession === s.id ? "bg-brand-50 text-brand-600" : "bg-slate-50 text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-400"
+                "p-2.5 rounded-sm transition-all duration-500 rotate-[-5deg]",
+                activeSession === s.id ? "bg-gold-500 text-noble-dark shadow-lg" : "bg-stone-800 text-stone-600 group-hover:bg-gold-500/20 group-hover:text-gold-500"
               )}>
                 <MessageSquare className="w-4 h-4 shrink-0" />
               </div>
               <div className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold">{s.title}</span>
-                <span className="block text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">2 messages</span>
+                <span className="block truncate text-sm font-serif italic font-black tracking-wide">{s.title}</span>
+                <span className="block text-[11px] text-stone-600 uppercase tracking-[0.1em] mt-1 font-serif italic font-black">Chronicle Record</span>
               </div>
               {activeSession === s.id && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-brand-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1 h-3 bg-gold-500 shadow-[0_0_10px_#c5a021]" />
               )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white rounded-[3rem] border border-slate-200/60 overflow-hidden shadow-2xl shadow-slate-200/60 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-brand-50/30 via-transparent to-transparent pointer-events-none" />
+      {/* Main Chat Area (Marble/Light Pane) */}
+      <div className="flex-1 flex flex-col bg-white border border-[#e8dec5] shadow-chiaroscuro overflow-hidden relative">
+        <div className="absolute inset-0 bg-gold-500/2 pointer-events-none" />
         
-        <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-10 custom-scrollbar relative">
+        <div className="flex-1 overflow-y-auto p-8 md:p-16 space-y-12 custom-scrollbar relative">
           {messages.map((m, idx) => (
             <motion.div 
               key={m.id} 
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
               className={cn("flex flex-col", m.role === ChatRole.USER ? "items-end" : "items-start")}
             >
-              <div className="flex items-end gap-3 max-w-[85%] group">
-                {m.role === ChatRole.ASSISTANT && (
-                  <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-brand-500/20 order-first mb-1">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                )}
+              <div className={cn("flex items-start gap-5 max-w-[85%] group", m.role === ChatRole.USER ? "flex-row-reverse" : "flex-row")}>
                 <div className={cn(
-                  "rounded-[2rem] px-7 py-5 shadow-sm transition-all duration-300",
+                  "w-12 h-12 rounded-sm shrink-0 shadow-lg flex items-center justify-center mt-2 border border-gold-500/30",
                   m.role === ChatRole.USER 
-                    ? "bg-[#1a1c1e] text-white rounded-tr-sm shadow-xl shadow-slate-900/10" 
-                    : "bg-slate-50 text-slate-800 rounded-tl-sm border border-slate-100"
+                    ? "bg-noble-dark text-gold-500" 
+                    : "bg-gold-500 text-noble-dark"
                 )}>
+                  {m.role === ChatRole.USER ? <User className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
+                </div>
+                
+                <div className={cn(
+                  "px-10 py-8 shadow-[0_10px_30px_rgba(0,0,0,0.05)] border transition-all duration-700 relative",
+                  m.role === ChatRole.USER 
+                    ? "bg-noble-dark text-stone-200 border-gold-500/20 rounded-sm" 
+                    : "bg-[#fffdf8] text-stone-900 border-[#e8dec5] rounded-sm marble-bg"
+                )}>
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <div className="w-1 h-1 bg-gold-500/20 rounded-full" />
+                    <div className="w-1 h-1 bg-gold-500/20 rounded-full" />
+                  </div>
+                  
                   <div className={cn(
-                    "prose prose-sm max-w-none leading-relaxed",
-                    m.role === ChatRole.USER ? "prose-invert text-white/90" : "prose-slate"
+                    "markdown-body",
+                    m.role === ChatRole.USER ? "prose-invert text-stone-300 font-bold" : ""
                   )}>
                     <ReactMarkdown>{m.content}</ReactMarkdown>
                   </div>
@@ -199,11 +209,11 @@ export default function ChatPage() {
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="mt-4 flex flex-wrap gap-2 ml-10"
+                  className={cn("mt-6 flex flex-wrap gap-3", m.role === ChatRole.USER ? "mr-16" : "ml-16")}
                 >
                   {JSON.parse(m.citationsJson).map((c: any, i: number) => (
-                    <div key={i} className="text-[10px] px-3 py-1.5 bg-slate-50 border border-slate-200/60 rounded-full text-slate-500 font-bold flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 transition-colors cursor-help">
-                      <Paperclip className="w-3 h-3" />
+                    <div key={i} className="text-[11px] px-4 py-2 bg-stone-900/5 border border-gold-500/10 rounded-sm text-stone-700 font-serif italic font-black flex items-center gap-2 hover:bg-noble-dark hover:text-gold-500 transition-all cursor-help shadow-sm">
+                      <Paperclip className="w-3 h-3 text-gold-500/60" />
                       {c.documentName}
                     </div>
                   ))}
@@ -214,17 +224,17 @@ export default function ChatPage() {
 
           {streamingContent && (
             <div className="flex flex-col items-start">
-              <div className="flex items-end gap-3 max-w-[85%]">
-                <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-brand-500/20 mb-1">
-                  <Bot className="w-4 h-4" />
+              <div className="flex items-start gap-5 max-w-[85%]">
+                <div className="w-12 h-12 rounded-sm bg-gold-500 text-noble-dark shrink-0 shadow-lg flex items-center justify-center mt-2 border border-gold-500/30">
+                  <Bot className="w-6 h-6" />
                 </div>
-                <div className="rounded-[2rem] px-7 py-5 bg-slate-50 text-slate-800 rounded-tl-sm border border-slate-100 shadow-sm">
-                  <div className="prose prose-sm max-w-none prose-slate leading-relaxed">
+                <div className="px-10 py-8 bg-[#fffdf8] text-stone-900 border-[#e8dec5] rounded-sm shadow-sm relative marble-bg">
+                  <div className="markdown-body">
                     <ReactMarkdown>{streamingContent}</ReactMarkdown>
                     <motion.span 
-                      animate={{ opacity: [1, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.8 }}
-                      className="inline-block w-1.5 h-4 bg-brand-500 ml-1 align-middle rounded-full" 
+                      animate={{ opacity: [1, 0, 1] }}
+                      transition={{ repeat: Infinity, duration: 1 }}
+                      className="inline-block w-2 h-5 bg-gold-500 ml-2 align-middle" 
                     />
                   </div>
                 </div>
@@ -233,42 +243,44 @@ export default function ChatPage() {
           )}
 
           {loading && !streamingContent && (
-             <div className="flex items-center gap-4 text-slate-400 text-xs font-bold tracking-widest uppercase ml-11 py-4">
-               <div className="flex gap-1">
-                 <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1 h-1 bg-brand-500 rounded-full" />
-                 <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1 h-1 bg-brand-500 rounded-full" />
-                 <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1 h-1 bg-brand-500 rounded-full" />
+             <div className="flex items-center gap-5 text-gold-700 text-[11px] font-black tracking-[0.2em] uppercase ml-20 py-6 animate-pulse font-serif italic">
+               <div className="flex gap-2">
+                 <div className="w-1.5 h-1.5 bg-gold-500 rounded-full" />
+                 <div className="w-1.5 h-1.5 bg-gold-500 rounded-full opacity-60" />
+                 <div className="w-1.5 h-1.5 bg-gold-500 rounded-full opacity-30" />
                </div>
-               AI IS DEEP-SEARCHING...
+               Divine Insight is Ascending...
              </div>
           )}
-          <div ref={scrollRef} className="h-4" />
+          <div ref={scrollRef} className="h-8" />
         </div>
 
-        {/* Input Area */}
-        <div className="px-8 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent relative z-10">
-          <div className="max-w-4xl mx-auto relative group">
-            <div className="absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+        {/* Input Area (Gilded Shadow) */}
+        <div className="px-12 pb-12 pt-6 bg-gradient-to-t from-white via-white/90 to-transparent relative z-10 border-t border-gold-500/5">
+          <div className="max-w-5xl mx-auto relative group">
             <div className="relative flex items-end">
               <textarea
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                placeholder="发送指令或询问知识库..."
-                className="w-full bg-slate-100 border-none rounded-[2rem] pl-7 pr-16 py-6 text-base focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:bg-white transition-all shadow-inner font-medium placeholder:text-slate-400 min-h-[72px]"
+                placeholder="撰写您的指令或询问知识库..."
+                className="w-full bg-stone-50 border border-[#e8dec5] rounded-sm pl-10 pr-24 py-8 text-lg focus:outline-none focus:ring-8 focus:ring-gold-500/5 focus:border-gold-500 transition-all font-serif italic font-black shadow-inner placeholder:text-stone-400 min-h-[96px] resize-none"
                 rows={1}
               />
               <button 
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
-                className="absolute right-3 bottom-3 p-3.5 bg-brand-500 text-white rounded-2xl shadow-xl shadow-brand-500/30 hover:bg-brand-600 disabled:opacity-50 disabled:shadow-none transition-all active:scale-95 group-focus-within:rotate-[-5deg]"
+                className="absolute right-4 bottom-4 p-5 bg-noble-dark text-gold-500 rounded-sm shadow-chiaroscuro hover:bg-stone-900 disabled:opacity-30 disabled:grayscale transition-all active:scale-90 border border-gold-500/30 group-focus-within:rotate-3"
               >
-                <Send className="w-5 h-5" />
+                <div className="relative">
+                  <Send className="w-7 h-7" />
+                  <div className="absolute inset-0 bg-gold-500/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </button>
             </div>
           </div>
-          <p className="text-[10px] text-center text-slate-300 mt-6 font-bold uppercase tracking-[0.2em]">
-             Protocol 5.0 — Neural Knowledge Discovery Engine
+          <p className="text-[11px] text-center text-stone-600 mt-8 font-serif italic uppercase tracking-[0.2em] font-black">
+             The Oracle of Knowflow — Illuminated Intelligence
           </p>
         </div>
       </div>
