@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { ApiResult, KnowledgeBaseVO, PageResult, KnowledgeBaseStatus, ChatSessionVO, ChatMessageVO } from './types';
+import { ApiResult, KnowledgeBaseVO, PageResult, ChatSessionVO, ChatMessageVO, DocumentVO, ChunkVO, IndexJobVO, RagSearchRequest, RagSearchResult, DocumentPreviewTextVO } from './types';
+import { apiBaseURL, getApiUrl } from './config/api';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: apiBaseURL,
   timeout: 10000,
 });
 
@@ -28,7 +29,7 @@ export const kbApi = {
 };
 
 export const docApi = {
-  list: (kbId: number, params: any) => api.get<ApiResult<PageResult<any>>>(`/knowledge-bases/${kbId}/documents`, { params }),
+  list: (kbId: number, params: any) => api.get<ApiResult<PageResult<DocumentVO>>>(`/knowledge-bases/${kbId}/documents`, { params }),
   upload: (kbId: number, file: File) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -36,17 +37,29 @@ export const docApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  delete: (id: number) => api.delete(`/documents/${id}`),
-  reindex: (id: number) => api.post(`/documents/${id}/reindex`),
-  getChunks: (id: number, params: any) => api.get(`/documents/${id}/chunks`, { params }),
-  getJob: (id: number) => api.get(`/documents/${id}/index-job`),
+  get: (id: number) => api.get<ApiResult<DocumentVO>>(`/documents/${id}`),
+  updateConstraint: (id: number, data: { constraintLevel: string; constraintPriority?: number }) =>
+    api.patch<ApiResult<DocumentVO>>(`/documents/${id}/constraint`, data),
+  fileUrl: (id: number) => getApiUrl(`/documents/${id}/file`),
+  downloadUrl: (id: number) => getApiUrl(`/documents/${id}/download`),
+  previewText: (id: number) => api.get<ApiResult<DocumentPreviewTextVO>>(`/documents/${id}/preview-text`),
+  delete: (id: number) => api.delete<ApiResult<null>>(`/documents/${id}`),
+  reindex: (id: number) => api.post<ApiResult<{ documentId: number; jobId: number; status: string }>>(`/documents/${id}/reindex`),
+  getChunks: (id: number, params: any) => api.get<ApiResult<PageResult<ChunkVO>>>(`/documents/${id}/chunks`, { params }),
+  getJob: (id: number) => api.get<ApiResult<IndexJobVO>>(`/documents/${id}/index-job`),
 };
 
 export const chatApi = {
   createSession: (data: any) => api.post<ApiResult<ChatSessionVO>>('/chat/sessions', data),
   listSessions: (params: any) => api.get<ApiResult<PageResult<ChatSessionVO>>>('/chat/sessions', { params }),
+  getSession: (id: number) => api.get<ApiResult<ChatSessionVO>>(`/chat/sessions/${id}`),
   getMessages: (sessionId: number, params: any) => api.get<ApiResult<PageResult<ChatMessageVO>>>(`/chat/sessions/${sessionId}/messages`, { params }),
   deleteSession: (id: number) => api.delete(`/chat/sessions/${id}`),
+  sendMessage: (sessionId: number, data: { content: string }) => api.post(`/chat/sessions/${sessionId}/messages`, data),
+};
+
+export const ragApi = {
+  search: (data: RagSearchRequest) => api.post<ApiResult<RagSearchResult>>('/rag/search', data),
 };
 
 export default api;

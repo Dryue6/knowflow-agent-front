@@ -23,7 +23,7 @@
   }
   
   h1, h2, h3, h4 {
-    @apply font-serif tracking-tight text-noble-dark italic font-black;
+    @apply font-serif tracking-tight text-noble-dark font-black;
   }
 }
 
@@ -38,7 +38,7 @@
 }
 
 .gilded-btn {
-  @apply px-8 py-3 bg-[#1a1614] text-[#c5a021] font-serif italic font-bold rounded-sm shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-[#2a2624] hover:shadow-[0_4px_25px_rgba(197,160,33,0.3)] transition-all active:scale-95 border border-[#c5a021]/30;
+  @apply px-8 py-3 bg-[#1a1614] text-[#c5a021] font-serif font-bold rounded-sm shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-[#2a2624] hover:shadow-[0_4px_25px_rgba(197,160,33,0.3)] transition-all active:scale-95 border border-[#c5a021]/30;
 }
 
 .marble-bg {
@@ -51,6 +51,6 @@
 }
 
 .markdown-body {
-  @apply prose prose-stone max-w-none prose-headings:font-serif italic;
+  @apply prose prose-stone max-w-none prose-headings:font-serif;
 }
 

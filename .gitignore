@@ -1,8 +1,29 @@
+# 依赖目录由包管理器恢复，不提交到仓库。
 node_modules/
+
+# 构建产物和覆盖率报告可重复生成，不纳入版本控制。
 build/
 dist/
 coverage/
-.DS_Store
-*.log
+
+# Vite、TypeScript 和本地运行过程中产生的临时缓存文件。
+.vite/
+*.tsbuildinfo
+server.js
+
+# 本地环境变量文件可能包含敏感配置，仅保留示例文件。
 .env*
 !.env.example
+
+# 编辑器和操作系统生成的本地配置。
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 包管理器、运行时和测试工具生成的日志文件。
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

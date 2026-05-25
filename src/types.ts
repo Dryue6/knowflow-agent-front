@@ -14,6 +14,12 @@ export enum DocumentStatus {
   DELETED = 'DELETED'
 }
 
+export enum DocumentConstraintLevel {
+  NORMAL = 'NORMAL',
+  PINNED = 'PINNED',
+  SYSTEM = 'SYSTEM'
+}
+
 export enum FileType {
   TXT = 'TXT',
   MD = 'MD',
@@ -82,8 +88,18 @@ export interface DocumentVO {
   status: DocumentStatus;
   errorMessage: string | null;
   chunkCount: number;
+  constraintLevel: DocumentConstraintLevel;
+  constraintPriority: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DocumentPreviewTextVO {
+  documentId: number;
+  fileName: string;
+  fileType: FileType;
+  content: string;
+  previewMode: 'TEXT';
 }
 
 export interface ChunkVO {
@@ -132,6 +148,32 @@ export interface Citation {
   documentName: string;
   chunkId: number;
   chunkIndex: number;
-  contentPreview: string;
+  contentPreview?: string;
+  snippet?: string;
+  score?: number;
+  pageNumber?: number | null;
+  sectionTitle?: string | null;
+  paragraphIndex?: number | null;
+  locationText?: string | null;
+}
+
+export interface RagSearchRequest {
+  knowledgeBaseId?: number;
+  query: string;
+  topK?: number;
+  minScore?: number;
+}
+
+export interface RagSearchChunk {
+  documentId: number;
+  documentName: string;
+  chunkId: number;
+  chunkIndex: number;
+  content: string;
   score: number;
+}
+
+export interface RagSearchResult {
+  query: string;
+  chunks: RagSearchChunk[];
 }
