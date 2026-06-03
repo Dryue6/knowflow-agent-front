@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { useSearchParams } from 'react-router-dom';
@@ -73,18 +73,19 @@ export default function DocumentsPage() {
     });
   };
 
-  const fetchDocs = async (nextKeyword = keyword) => {
+  const fetchDocs = useCallback(async (nextKeyword = keyword) => {
     if (!activeKb) return;
     setLoading(true);
     try {
       const res = await docApi.list(activeKb, { page: 1, size: 50, keyword: nextKeyword || undefined });
-      setDocs(res.data?.data?.records || []);
+      const records = res.data?.data?.records || [];
+      setDocs(records);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeKb, keyword]);
 
   useEffect(() => {
     fetchKbs();
@@ -100,7 +101,7 @@ export default function DocumentsPage() {
       fetchDocs(keyword);
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [activeKb, keyword]);
+  }, [activeKb, keyword, fetchDocs]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,7 +110,7 @@ export default function DocumentsPage() {
     setUploadLoading(true);
     try {
       await docApi.upload(activeKb, file);
-      fetchDocs();
+      fetchDocs(keyword);
     } catch (err) {
       console.error(err);
       alert('上传失败，请稍后重试。');
@@ -122,7 +123,7 @@ export default function DocumentsPage() {
   const handleReindex = async (documentId: number) => {
     try {
       await docApi.reindex(documentId);
-      fetchDocs();
+      fetchDocs(keyword);
     } catch (err) {
       console.error(err);
       alert('重新索引失败，请稍后重试。');
@@ -153,10 +154,19 @@ export default function DocumentsPage() {
 
   const handleConstraintChange = async (doc: DocumentVO, constraintLevel: DocumentConstraintLevel) => {
     const priority = constraintLevel === DocumentConstraintLevel.SYSTEM ? 10 : constraintLevel === DocumentConstraintLevel.PINNED ? 50 : 100;
-    const res = await docApi.updateConstraint(doc.id, { constraintLevel, constraintPriority: priority });
-    const updated = res.data?.data;
-    if (updated) {
-      setDocs((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+    const previousDoc = doc;
+    // 资料层级会影响后续索引和检索优先级，索引完成前也允许先乐观更新，失败时再回滚。
+    setDocs((items) => items.map((item) => (item.id === doc.id ? { ...item, constraintLevel, constraintPriority: priority } : item)));
+    try {
+      const res = await docApi.updateConstraint(doc.id, { constraintLevel, constraintPriority: priority });
+      const updated = res.data?.data;
+      if (updated) {
+        setDocs((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+      }
+    } catch (err) {
+      console.error(err);
+      setDocs((items) => items.map((item) => (item.id === previousDoc.id ? previousDoc : item)));
+      alert('资料层级更新失败，请稍后重试。');
     }
   };
 
@@ -399,7 +409,7 @@ export default function DocumentsPage() {
                   <p className="text-[11px] font-black text-gold-700 uppercase tracking-[0.16em]">{previewTitle(previewDoc.fileType)}</p>
                   <h3 className="text-xl font-black text-noble-dark truncate">{previewDoc.originalFileName}</h3>
                   {previewDoc.fileType === FileType.DOCX && (
-                    <p className="text-xs text-stone-500 mt-1">DOCX 当前显示解析后的文本内容，原始版式请下载文件查看。</p>
+                    <p className="text-xs text-stone-500 mt-1">DOCX 当前显示索引后的解析文本，包含 OCR 图片文字；原始版式请下载文件查看。</p>
                   )}
                 </div>
                 <div className="flex items-center gap-3">

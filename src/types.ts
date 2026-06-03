@@ -36,7 +36,8 @@ export enum IndexJobStatus {
   PENDING = 'PENDING',
   RUNNING = 'RUNNING',
   SUCCESS = 'SUCCESS',
-  FAILED = 'FAILED'
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED'
 }
 
 export enum ChatRole {
@@ -100,6 +101,14 @@ export interface DocumentPreviewTextVO {
   fileType: FileType;
   content: string;
   previewMode: 'TEXT';
+}
+
+export interface PresignedUploadUrlResponse {
+  uploadUrl: string;
+  objectKey: string;
+  bucket: string;
+  filePath: string;
+  expiresAt: string;
 }
 
 export interface ChunkVO {

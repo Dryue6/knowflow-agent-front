@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ApiResult, KnowledgeBaseVO, PageResult, ChatSessionVO, ChatMessageVO, DocumentVO, ChunkVO, IndexJobVO, RagSearchRequest, RagSearchResult, DocumentPreviewTextVO } from './types';
+import { ApiResult, KnowledgeBaseVO, PageResult, ChatSessionVO, ChatMessageVO, DocumentVO, ChunkVO, IndexJobVO, RagSearchRequest, RagSearchResult, DocumentPreviewTextVO, PresignedUploadUrlResponse } from './types';
 import { apiBaseURL, getApiUrl } from './config/api';
 
 const api = axios.create({
@@ -30,11 +30,37 @@ export const kbApi = {
 
 export const docApi = {
   list: (kbId: number, params: any) => api.get<ApiResult<PageResult<DocumentVO>>>(`/knowledge-bases/${kbId}/documents`, { params }),
-  upload: (kbId: number, file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post(`/knowledge-bases/${kbId}/documents/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+  createUploadUrl: (kbId: number, file: File) =>
+    api.post<ApiResult<PresignedUploadUrlResponse>>(`/knowledge-bases/${kbId}/documents/upload-url`, {
+      originalFileName: file.name,
+      fileSize: file.size,
+      contentType: file.type || 'application/octet-stream',
+    }),
+  completeUpload: (kbId: number, payload: { objectKey: string; originalFileName: string; fileSize: number; contentType: string }) =>
+    api.post<ApiResult<{ documentId: number; jobId: number; status: string }>>(`/knowledge-bases/${kbId}/documents/complete-upload`, payload),
+  upload: async (kbId: number, file: File) => {
+    const uploadUrlRes = await docApi.createUploadUrl(kbId, file);
+    const uploadInfo = uploadUrlRes.data?.data;
+    if (!uploadInfo?.uploadUrl || !uploadInfo.objectKey) {
+      throw new Error('未获取到文件直传地址');
+    }
+
+    const uploadResponse = await fetch(uploadInfo.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+    });
+    if (!uploadResponse.ok) {
+      throw new Error(`文件直传 MinIO 失败: ${uploadResponse.status}`);
+    }
+
+    return docApi.completeUpload(kbId, {
+      objectKey: uploadInfo.objectKey,
+      originalFileName: file.name,
+      fileSize: file.size,
+      contentType: file.type || 'application/octet-stream',
     });
   },
   get: (id: number) => api.get<ApiResult<DocumentVO>>(`/documents/${id}`),

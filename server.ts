@@ -41,7 +41,8 @@ const toProxyTarget = (backendApiBaseUrl: string, originalUrl: string) => {
 };
 
 const createApiProxy = (backendApiBaseUrl: string): RequestHandler => {
-  const skippedRequestHeaders = new Set(["host", "connection"]);
+  // Node 内置 fetch(Undici) 不支持转发部分逐跳请求头；过滤 Expect 可避免本地代理在上传前置接口上返回 BAD_GATEWAY。
+  const skippedRequestHeaders = new Set(["host", "connection", "expect"]);
   const skippedResponseHeaders = new Set([
     "connection",
     "content-encoding",
@@ -133,6 +134,66 @@ const registerMockApi = (app: Express) => {
       updatedAt: new Date().toISOString(),
     },
   ];
+
+  const mockUploadedObjects = new Map<string, { objectKey: string; size: number }>();
+  const mockIndexJobs = new Map<number, any>();
+
+  const inferFileType = (fileName: string) => {
+    const lower = fileName.toLowerCase();
+    if (lower.endsWith(".txt")) return "TXT";
+    if (lower.endsWith(".md")) return "MD";
+    if (lower.endsWith(".docx")) return "DOCX";
+    return "PDF";
+  };
+
+  const startMockIndexJob = (documentId: number, knowledgeBaseId: number, jobType = "INDEX") => {
+    const jobId = Date.now();
+    const now = new Date().toISOString();
+    mockIndexJobs.set(documentId, {
+      id: jobId,
+      documentId,
+      knowledgeBaseId,
+      jobType,
+      status: "RUNNING",
+      progress: 25,
+      errorMessage: null,
+      startedAt: now,
+      finishedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // mock 模式下模拟异步索引完成，方便前端验证“上传后先显示索引中，再轮询到完成”的交互。
+    setTimeout(() => {
+      const finishedAt = new Date().toISOString();
+      documents = documents.map((item) =>
+        item.id === documentId
+          ? { ...item, status: "INDEXED", chunkCount: 6, updatedAt: finishedAt }
+          : item,
+      );
+      mockIndexJobs.set(documentId, {
+        ...mockIndexJobs.get(documentId),
+        status: "SUCCESS",
+        progress: 100,
+        finishedAt,
+        updatedAt: finishedAt,
+      });
+      knowledgeBases = knowledgeBases.map((item) =>
+        item.id === knowledgeBaseId
+          ? {
+              ...item,
+              documentCount: documents.filter((doc) => doc.knowledgeBaseId === knowledgeBaseId).length,
+              chunkCount: documents
+                .filter((doc) => doc.knowledgeBaseId === knowledgeBaseId)
+                .reduce((total, doc) => total + Number(doc.chunkCount || 0), 0),
+              updatedAt: finishedAt,
+            }
+          : item,
+      );
+    }, 2500);
+
+    return jobId;
+  };
 
   let sessions = [
     {
@@ -248,6 +309,63 @@ const registerMockApi = (app: Express) => {
     res.json(jsonResult({ records, total: records.length, page: 1, size: 10 }));
   });
 
+  app.post(`${API_PREFIX}/knowledge-bases/:kbId/documents/upload-url`, (req, res) => {
+    const kbId = Number(req.params.kbId);
+    const token = `${kbId}-${Date.now()}`;
+    const objectKey = `${kbId}/${new Date().toISOString().slice(0, 10)}/mock-${Date.now()}`;
+    mockUploadedObjects.set(token, { objectKey, size: 0 });
+    res.json(
+      jsonResult({
+        uploadUrl: `${API_PREFIX}/mock-minio-upload/${token}`,
+        objectKey,
+        bucket: "mock-knowflow-documents",
+        filePath: `minio://mock-knowflow-documents/${objectKey}`,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      }),
+    );
+  });
+
+  app.put(`${API_PREFIX}/mock-minio-upload/:token`, express.raw({ type: "*/*", limit: "200mb" }), (req, res) => {
+    const token = req.params.token;
+    const uploaded = mockUploadedObjects.get(token);
+    if (!uploaded) {
+      res.status(404).end();
+      return;
+    }
+    mockUploadedObjects.set(token, { ...uploaded, size: Buffer.isBuffer(req.body) ? req.body.length : 0 });
+    res.status(200).end();
+  });
+
+  app.post(`${API_PREFIX}/knowledge-bases/:kbId/documents/complete-upload`, (req, res) => {
+    const kbId = Number(req.params.kbId);
+    const { objectKey, originalFileName, fileSize } = req.body;
+    const uploaded = [...mockUploadedObjects.values()].find((item) => item.objectKey === objectKey);
+    if (!uploaded) {
+      res.status(400).json(jsonResult(null, "mock object not uploaded"));
+      return;
+    }
+    const documentId = Date.now();
+    const newDocument = {
+      id: documentId,
+      knowledgeBaseId: kbId,
+      fileName: objectKey.split("/").pop() || `mock_${Date.now()}.pdf`,
+      originalFileName: originalFileName || "uploaded_document.pdf",
+      fileType: inferFileType(originalFileName || ""),
+      fileSize: Number(fileSize || uploaded.size || 0),
+      title: originalFileName || "Uploaded Document",
+      status: "UPLOADED",
+      errorMessage: null,
+      chunkCount: 0,
+      constraintLevel: "NORMAL",
+      constraintPriority: 100,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    documents = [newDocument, ...documents];
+    const jobId = startMockIndexJob(documentId, kbId);
+    res.json(jsonResult({ documentId: newDocument.id, jobId, status: newDocument.status }));
+  });
+
   app.post(`${API_PREFIX}/knowledge-bases/:kbId/documents/upload`, (req, res) => {
     const originalFileNameHeader = req.headers["x-file-name"];
     const originalFileName = Array.isArray(originalFileNameHeader)
@@ -360,7 +478,17 @@ const registerMockApi = (app: Express) => {
   });
 
   app.post(`${API_PREFIX}/documents/:id/reindex`, (req, res) => {
-    res.json(jsonResult({ documentId: Number(req.params.id), status: "RUNNING", progress: 0 }));
+    const documentId = Number(req.params.id);
+    let knowledgeBaseId = 1;
+    documents = documents.map((item) => {
+      if (item.id !== documentId) {
+        return item;
+      }
+      knowledgeBaseId = item.knowledgeBaseId;
+      return { ...item, status: "INDEXING", updatedAt: new Date().toISOString() };
+    });
+    const jobId = startMockIndexJob(documentId, knowledgeBaseId, "REINDEX");
+    res.json(jsonResult({ documentId, jobId, status: "INDEXING" }));
   });
 
   app.get(`${API_PREFIX}/documents/:id/chunks`, (req, res) => {
@@ -387,6 +515,11 @@ const registerMockApi = (app: Express) => {
 
   app.get(`${API_PREFIX}/documents/:id/index-job`, (req, res) => {
     const documentId = Number(req.params.id);
+    const job = mockIndexJobs.get(documentId);
+    if (job) {
+      res.json(jsonResult(job));
+      return;
+    }
     res.json(
       jsonResult({
         id: documentId,
